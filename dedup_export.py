@@ -15,6 +15,7 @@ beats the sparser one).
 from __future__ import annotations
 
 import csv
+import re
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -41,6 +42,15 @@ FIELDS = [
 
 PHOTO_PX = 80          # rendered side, pixels (square)
 DOWNLOAD_WORKERS = 12
+
+# Excel forbids these control characters in cell values (XML 1.0 spec).
+_ILLEGAL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def clean(v: str) -> str:
+    if not v:
+        return ""
+    return _ILLEGAL_CHARS.sub("", v)
 
 
 def read_rows() -> list[dict]:
@@ -173,10 +183,8 @@ def write_xlsx(rows: list[dict], thumbs: dict[str, Path]) -> None:
         for col_i, h in enumerate(headers, start=1):
             if h == "photo":
                 continue
-            if h == "photo_url":
-                ws.cell(row=idx, column=col_i, value=r.get("photo", ""))
-            else:
-                ws.cell(row=idx, column=col_i, value=r.get(h, ""))
+            value = r.get("photo", "") if h == "photo_url" else r.get(h, "")
+            ws.cell(row=idx, column=col_i, value=clean(value))
         ws.row_dimensions[idx].height = point_height
 
         url = r.get("photo", "").strip()
