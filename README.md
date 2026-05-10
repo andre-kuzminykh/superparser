@@ -47,6 +47,31 @@ Wrote 1840 rows to data/concordia_directory.csv
 them as protocol-relative `//assets.swoogo.com/...`; the scraper prepends
 `https:`).
 
+## Step 2: Dedupe + XLSX with embedded photos
+
+After `scraper.py` produced `data/concordia_directory.csv`, run:
+
+```bash
+python dedup_export.py
+```
+
+This will:
+
+1. Group rows by lower-cased `full_name`. For each field the longest
+   non-empty value across the group wins, so the more complete profile
+   beats the sparser duplicate. Result is written to
+   `data/concordia_directory_deduped.csv`.
+2. Download every unique profile photo into `data/photos/` (cached, so
+   re-runs are cheap), center-crop and resize each to an 80×80 PNG
+   thumbnail.
+3. Build `data/concordia_directory.xlsx` with column A holding the
+   embedded thumbnail and the rest of the fields in the remaining
+   columns. The original photo URL is preserved as the last column
+   (`photo_url`).
+
+Open the result with `open data/concordia_directory.xlsx`. Numbers and
+Excel both render the embedded images.
+
 ## Notes
 
 - Credentials are hard-coded in `scraper.py` for convenience. If the
